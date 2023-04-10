@@ -1,0 +1,33 @@
+{
+    "id": "sample-play-id",
+    "name": "Sample Play",
+    "characters": ["Character 1", "Character 2", "Character 3"],
+    "scenes": [
+      {
+        "passId": 121,
+        "position": 1,
+        "title": "Scene 1",
+        "content": [
+         
+              {
+                "nom": "Jean Claude",
+                "identifiant": 1680780244252,
+                "estEnCoursDEdition": false,
+                "texte": "francoise quand meme"
+              },
+              {
+                "nom": "Jean",
+                "identifiant": 1680744252,
+                "estEnCoursDEdition": false,
+                "texte": "francoisuand meme"
+              }
+        ]
+      },
+      {
+        "position": 2,
+        "title": "Scene 2",
+        "content": []
+      }
+    ]
+  }
+  
