@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import useFirestoreCRUD from '../ComposablesFirebase';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { v4 as uuidv4 } from 'uuid';
-
+import { storage } from '../firebase';
 
 
 
@@ -24,12 +24,30 @@ function SceneContent({ playId, scene, characters }) {
         }
     };
 
-    const [audioName, setAudioName] = useState(null);
-    const [audioId, setAudioId] = useState(null);
     const [recording, setRecording] = useState(null);
 
     const mediaRecorderRef = useRef(null);
+    const [audioIda, setAudioId] = useState(null)
+    const [audioNamea, setAudioName] = useState(null)
 
+    const uploadAudioToFirebase = async (audioBlob) => {
+        const audioId = Date.now()
+        setAudioId(audioId); // Générer un identifiant unique pour le fichier audio
+        const audioName = `audio_${audioId}.webm`; 
+            setAudioName(`audio_${audioId}.webm`);
+        const audioRef = storage.ref().child(`audio/${audioName}`);
+
+        try {
+            const snapshot = await audioRef.put(audioBlob);
+            const audioURL = await snapshot.ref.getDownloadURL();
+
+            return { audioName, audioURL, audioId };
+        } catch (error) {
+            console.error('Error uploading audio:', error);
+        }
+
+        return null;
+    };
 
     const startRecording = async () => {
         try {
@@ -45,8 +63,10 @@ function SceneContent({ playId, scene, characters }) {
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                 setRecording(audioBlob);
+                console.log(audioBlob);
             };
 
+            setRecording(null); // Réinitialiser l'enregistrement précédent
             mediaRecorder.start();
         } catch (error) {
             console.error('Error starting recording:', error);
@@ -62,18 +82,25 @@ function SceneContent({ playId, scene, characters }) {
 
 
 
-    const openModal = (commentId) => {
+
+    const openModal = (commentId, commentText, CommentCharacter) => {
         setActiveCommentId(commentId);
+        setActiveCommentText(commentText);
+        setActiveCommentCharacter(CommentCharacter);
         setIsModalOpen(true);
     };
     const closeModal = () => {
         setActiveCommentId(null);
+        setActiveCommentText(null);
+        setActiveCommentCharacter(null)
         setIsModalOpen(false);
     };
 
     //mon modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeCommentId, setActiveCommentId] = useState(null);
+    const [activeCommentText, setActiveCommentText] = useState(null);
+    const [activeCommentCharacter, setActiveCommentCharacter] = useState(null);
 
 
 
@@ -154,6 +181,16 @@ function SceneContent({ playId, scene, characters }) {
         );
     }
 
+    const playAudio = (audioId) => {
+        const audioElement = document.getElementById(audioId);
+        if (audioElement) {
+            audioElement.play();
+        }
+    };
+    
+    
+
+
     const handleListItemBlur = (itemId, newText) => {
         setSceneContent((prevListItems) =>
             prevListItems.map((item) => {
@@ -178,8 +215,24 @@ function SceneContent({ playId, scene, characters }) {
         // Mettre à jour la scène dans Firestore
         updateSceneContentDelete(playId, scene.position, newSceneContent, 'delete');
     };
-    const handleListItemUpdate = (itemId, newText, newCharacter, audioName, audioId) => {
+
+    const handleListItemUpdate = async (itemId, newText, newCharacter) => {
         console.log(itemId, newText)
+
+        let audioName = null;
+        let audioId = null;
+        let audioUrl = null
+
+        if (recording) {
+            const audioData = await uploadAudioToFirebase(recording);
+            if (audioData) {
+                console.log('Audio uploaded:', audioData.audioName, audioData.audioURL, audioData.audioId);
+                audioName = audioData.audioName;
+                audioId = audioData.audioId;
+                audioUrl = audioData.audioURL
+            }
+        }
+
         const updatedSceneContent = sceneContent.map((item) =>
             item.id === itemId ?
                 {
@@ -187,8 +240,9 @@ function SceneContent({ playId, scene, characters }) {
                     text: newText,
                     isEditing: false,
                     character: newCharacter,
-                    ...(audioName ? { audioName } : {}),
-                    ...(audioId ? { audioId } : {}),
+                    ...(audioName ? { audioName: audioName } : {}),
+                    ...(audioId ? { audioId: audioId } : {}),
+                    ...(audioUrl ? { audioUrl: audioUrl } : {}),
                 } : item
         );
         setSceneContent(updatedSceneContent);
@@ -196,6 +250,7 @@ function SceneContent({ playId, scene, characters }) {
         // Mettre à jour la scène dans Firestore
         updateSceneContentUpdate(playId, scene.position, updatedSceneContent, 'update');
     };
+
 
 
 
@@ -255,7 +310,7 @@ function SceneContent({ playId, scene, characters }) {
                     <textarea className='block border-2 border-red-100' type="text" value={inputValue} data-max-length="20" onChange={(e) => handleInputChange(e)}
                     />
                     <button className='mt-4' onClick={handleAddButtonClick} disabled={!selectedCharacter}>Add</button>
-                                    <button onClick={handleScrollToBottom}>Scroller en bas</button>
+                    <button onClick={handleScrollToBottom}>Scroller en bas</button>
 
                 </div>
             </div>
@@ -308,19 +363,19 @@ function SceneContent({ playId, scene, characters }) {
                                                                         </button>
 
 
-                                                                        <button onClick={() => openModal(item.id)}>Record Audio</button>
+                                                                        <button onClick={() => openModal(item.id, item.text, item.character)}></button>
                                                                     </div>
                                                                     {isModalOpen && (
                                                                         <div className="modal">
                                                                             <div className="modal-content">
-                                                                                <h2>Recording Audio for Comment ID: {activeCommentId}</h2>
+                                                                                <h2>le texte  : {item.text} </h2>
                                                                                 {/* Ajoutez ici les boutons d'enregistrement audio et l'élément audio */}
                                                                                 <button onClick={startRecording}>Start Recording</button>
                                                                                 <button onClick={stopRecording}>Stop Recording</button>
                                                                                 {recording && <audio src={URL.createObjectURL(recording)} controls />}
                                                                                 <button
                                                                                     onClick={() => {
-                                                                                        handleListItemUpdate(activeCommentId, activeCommentText, activeCommentCharacter, audioName, audioId);
+                                                                                        handleListItemUpdate(activeCommentId, activeCommentText, activeCommentCharacter);
                                                                                         closeModal();
                                                                                     }}
                                                                                 >
@@ -333,23 +388,61 @@ function SceneContent({ playId, scene, characters }) {
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <span className='flex items-center justify-between' onClick={() => handleListItemClick(item.id)}>
-                                                                        <div className='flex'>
-                                                                            <span className='min-w-[100px]'>
-                                                                                {item.character}
-                                                                            </span>
-                                                                            <span ref={commentListRef} className='min-w-[200px] max-w-[700px]'>
+                                                                    <span
+                                                                        className="flex items-center justify-between"
+                                                                        
+                                                                    >
+                                                                        <div className="flex">
+                                                                            <span className="min-w-[100px]">{item.character}</span>
+                                                                            <span
+                                                                            onClick={() => handleListItemClick(item.id)}
+                                                                                ref={commentListRef}
+                                                                                className="min-w-[200px] max-w-[700px]"
+                                                                            >
                                                                                 {item.text}
                                                                             </span>
                                                                         </div>
                                                                         <span>
 
+                                                                            {(item.audioId) && (
+                                                                                <>
+                                                                                    <audio
+                                                                                        id={`audio_${item.audioId}`}
+                                                                                        src={item.audioUrl}
+                                                                                        type="audio/webm"
+                                                                                        controls={false}
+                                                                                    />
+                                                                                    <button
+                                                                                        className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+                                                                                        onClick={() => playAudio(`audio_${item.audioId}`)}
+                                                                                        // onClick={() => playAudio(item.audioURL)}
+                                                                                        >
+                                                                                        Lire l'audio
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </span>
+                                                                        <span>
+                                                                            {/* {item.audioId && (
+                                                                                <button
+                                                                                    className="bg-green-500 text-white px-2 py-1 rounded mr-2"
+                                                                                    onClick={(event) => {
+                                                                                        event.stopPropagation();
+                                                                                        playAudio(item.audioId);
+                                                                                    }}
+                                                                                >
+                                                                                    Lire Audio
+                                                                                </button>
+                                                                            )} */}
                                                                             (position: {item.position})
                                                                             <button onClick={() => handleListItemDelete(item.id)}>
                                                                                 Delete
                                                                             </button>
                                                                         </span>
+
+
                                                                     </span>
+
                                                                 </>
                                                             )}
                                                         </div>

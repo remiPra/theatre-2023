@@ -26,15 +26,15 @@ const firebaseConfig = {
 //     appId: "1:763834218878:web:e9fe9610ea5ebc873d9b2f",
 //     measurementId: "G-60F0HM8DHD"
 //   };
-//   const firebaseConfig = {
-//     apiKey: "AIzaSyBV9eMeA5BH13OUhQAFqWPvr_ADkqnG3PU",
-//     authDomain: "projet-test-theatre-seco.firebaseapp.com",
-//     projectId: "projet-test-theatre-seco",
-//     storageBucket: "projet-test-theatre-seco.appspot.com",
-//     messagingSenderId: "187067275747",
-//     appId: "1:187067275747:web:b5dfb7540229d2f63928d6",
-//     measurementId: "G-9H79MS8FNM"
-//   };
+  // const firebaseConfig = {
+  //   apiKey: "AIzaSyBV9eMeA5BH13OUhQAFqWPvr_ADkqnG3PU",
+  //   authDomain: "projet-test-theatre-seco.firebaseapp.com",
+  //   projectId: "projet-test-theatre-seco",
+  //   storageBucket: "projet-test-theatre-seco.appspot.com",
+  //   messagingSenderId: "187067275747",
+  //   appId: "1:187067275747:web:b5dfb7540229d2f63928d6",
+  //   measurementId: "G-9H79MS8FNM"
+  // };
 
 // Initialiser Firebase
 firebase.initializeApp(firebaseConfig);
