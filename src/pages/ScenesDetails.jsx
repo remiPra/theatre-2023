@@ -45,7 +45,7 @@ function SceneDetails() {
 
   return (
     <div>
-      <h1>Scène {scene.position} : {scene.title}</h1>
+      <h1 className='text-[28px] lg:text-[45px]'>Scène {scene.position} : {scene.title}</h1>
     
       {/* Vous pouvez ajouter un composant pour créer le contenu ici */}
       <SceneContent playId={playId} scene={scene} characters={characters} />

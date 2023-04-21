@@ -12,6 +12,13 @@ import PlayDetails from './pages/PlaysDetails';
 import SceneDetails from './pages/ScenesDetails';
 import ErrorBoundary from './ErrorBundaries';
 import SceneVoirDetails from './pages/ScenesVoirDetails';
+import WebFont from 'webfontloader';
+
+WebFont.load({
+  google: {
+    families: ['Roboto:400,700', 'sans-serif']
+  }
+});
 
 
 

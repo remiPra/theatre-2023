@@ -3,6 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useFirestoreCRUD from '../ComposablesFirebase';
 import AddSceneForm from './AddSceneForm';
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import DraggableScene from "../components/DraggableScene";
+import { Link } from 'react-router-dom';
+
+
 
 function PlayDetails() {
     const navigate = useNavigate()
@@ -22,7 +28,31 @@ function PlayDetails() {
         setPlay({ ...play, characters: newCharacters });
     };
 
+
+    //modal pour creer une nouvelle scene
+    const [showAddSceneModal, setShowAddSceneModal] = useState(false);
+    const toggleAddSceneModal = () => {
+        setShowAddSceneModal(!showAddSceneModal);
+    };
+
+
+
     const { updateDocument } = useFirestoreCRUD('pieces');
+
+    //fonction bougeant les scenes
+    const moveScene = async (fromIndex, toIndex) => {
+        const updatedScenes = [...play.scenes];
+        const [removedScene] = updatedScenes.splice(fromIndex, 1);
+        updatedScenes.splice(toIndex, 0, removedScene);
+
+        // Vous pouvez mettre à jour les scènes dans Firestore ici si nécessaire
+        try {
+            await updateDocument(id, { scenes: updatedScenes });
+            setPlay({ ...play, scenes: updatedScenes });
+        } catch (error) {
+            console.error("Erreur lors de la mise à jour des scènes:", error);
+        }
+    };
 
     const updateCharacters = async () => {
         try {
@@ -36,11 +66,14 @@ function PlayDetails() {
     };
 
 
+
+
     useEffect(() => {
         async function fetchPlay() {
             try {
                 const playData = await getDocument(id);
                 setPlay(playData);
+
             } catch (error) {
                 console.error('Erreur lors de la récupération de la pièce:', error);
             }
@@ -61,7 +94,7 @@ function PlayDetails() {
     return (
         <div>
             <h1>Détails de la pièce : {play.name}</h1>
-
+            
             <p>Personnages : {play.characters.join(', ')}</p>
             <button onClick={() => setEditingCharacters(!editingCharacters)}>
                 {editingCharacters ? "Annuler" : "Modifier les personnages"}
@@ -77,28 +110,52 @@ function PlayDetails() {
                 <button onClick={updateCharacters}>Enregistrer les modifications</button>
             )}
 
+            <button onClick={toggleAddSceneModal}>Ajouter une scène</button>
+
+            {/* <AddSceneForm playId={play.id} currentScenes={play.scenes || []} /> */}
+            {showAddSceneModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white p-8 rounded">
+                        <h2 className="text-xl mb-4">Ajouter une nouvelle scène</h2>
+                        <AddSceneForm playId={play.id} currentScenes={play.scenes || []} />
+                        <button className="bg-gray-500 text-white px-4 py-2 rounded mt-4" onClick={toggleAddSceneModal}>
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            )}
 
 
             <div>
 
-                {play.scenes && Array.isArray(play.scenes) && play.scenes.map((el) => (
-                    <div key={el.position}>
-                        <h3 >Scène {el.position}  : {el.title}  </h3>
-                        <button
-                            onClick={() =>
-                                navigate(`/piece/${play.id}/scene/${el.position}`)
-                            }
-                        >Changer le contenu </button>
-                        <button
-                            onClick={() =>
-                                navigate(`/piece/${play.id}/sceneTheatre/${el.position}`)
-                            }
-                        >Voir le contenu </button>
-                    </div>
-                ))}
-                <p></p>
+                <div>
+            
+
+                    <DndProvider backend={HTML5Backend}>
+                        {play.scenes &&
+                            Array.isArray(play.scenes) &&
+                            play.scenes.sort((a, b) => a.position - b.position)
+                                .map((scene, index) =>
+                                (
+                                    <>
+                                    
+                                        <DraggableScene
+                                            key={scene.position}
+                                            scene={scene}
+                                            playId={play.id}
+                                            index={index}
+                                            moveScene={moveScene}
+                                        />
+
+                                    </>
+
+                                )
+
+                                )}
+                    </DndProvider>
+                </div>
             </div>
-            <AddSceneForm playId={play.id} currentScenes={play.scenes || []} />
+
         </div>
     );
 }

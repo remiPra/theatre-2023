@@ -54,6 +54,7 @@ const useFirestoreCRUD = (collection) => {
       setError(error);
     }
   };
+
   const updateSceneContentDelete = async (playId, scenePosition, newEntry, action) => {
     try {
         const playDoc = await getDocument(playId);
@@ -64,16 +65,16 @@ const useFirestoreCRUD = (collection) => {
 
         if (scene) {
             // Mettre à jour le contenu de la scène en fonction de l'action
-            const updatedContent =
-                action === 'delete'
-                    ? newEntry
-                    : firebase.firestore.FieldValue.arrayUnion(newEntry);
+            const updatedContent = action !== 'dete' ? newEntry : firebase.firestore.FieldValue.arrayUnion(newEntry);
 
             // Mettre à jour la scène
             scene.content = updatedContent;
 
             // Mettre à jour les scènes dans le document de la pièce
             await updateDocument(playId, { scenes });
+
+            // Retourner les scènes mises à jour
+            return scenes;
         } else {
             throw new Error('La scène spécifiée est introuvable.');
         }
@@ -82,8 +83,10 @@ const useFirestoreCRUD = (collection) => {
     }
 };
 
-const updateSceneContentUpdate = async (playId, scenePosition, newEntry, action) => {
-  try {
+
+
+  const updateSceneContentUpdate = async (playId, scenePosition, newEntry, action) => {
+    try {
       const playDoc = await getDocument(playId);
       const scenes = playDoc.scenes;
 
@@ -91,79 +94,79 @@ const updateSceneContentUpdate = async (playId, scenePosition, newEntry, action)
       const scene = scenes.find(scene => scene.position === scenePosition);
 
       if (scene) {
-          let updatedContent;
+        let updatedContent;
 
-          if (action === 'add') {
-              updatedContent = firebase.firestore.FieldValue.arrayUnion(newEntry);
-          } else if (action === 'update') {
-              updatedContent = newEntry;
-          } else if (action === 'delete') {
-              updatedContent = newEntry;
-          }
+        if (action === 'add') {
+          updatedContent = firebase.firestore.FieldValue.arrayUnion(newEntry);
+        } else if (action === 'update') {
+          updatedContent = newEntry;
+        } else if (action === 'delete') {
+          updatedContent = newEntry;
+        }
 
-          // Mettre à jour la scène
-          scene.content = updatedContent;
+        // Mettre à jour la scène
+        scene.content = updatedContent;
 
-          // Mettre à jour les scènes dans le document de la pièce
-          await updateDocument(playId, { scenes });
+        // Mettre à jour les scènes dans le document de la pièce
+        await updateDocument(playId, { scenes });
       } else {
-          throw new Error('La scène spécifiée est introuvable.');
+        throw new Error('La scène spécifiée est introuvable.');
       }
-  } catch (error) {
+    } catch (error) {
       setError(error);
-  }
-};
+    }
+  };
 
-  
-  
+
+
 
 
 
   const updateSceneContent = async (playId, scenePosition, newEntry) => {
     try {
-        // Récupérer le document de la pièce
-        const playRef = await db.collection('pieces').doc(playId).get();
-        console.log(playId, scenePosition, newEntry);
-        if (playRef.exists) {
-            // Obtenir les données de la pièce et les scènes
-            const playData = playRef.data();
-            const scenes = playData.scenes;
+      // Récupérer le document de la pièce
+      const playRef = await db.collection('pieces').doc(playId).get();
+      console.log(playId, scenePosition, newEntry);
+      if (playRef.exists) {
+        // Obtenir les données de la pièce et les scènes
+        const playData = playRef.data();
+        const scenes = playData.scenes;
 
-            // Trouver la scène avec la position donnée
-            const scene = scenes.find(scene => scene.position === scenePosition);
+        // Trouver la scène avec la position donnée
+        const scene = scenes.find(scene => scene.position === scenePosition);
 
-            if (scene) {
-                // Vérifier si le champ "content" existe et initialiser s'il n'existe pas
-                if (!scene.content) {
-                    scene.content = [];
-                }
+        if (scene) {
+          // Vérifier si le champ "content" existe et initialiser s'il n'existe pas
+          if (!scene.content) {
+            scene.content = [];
+          }
 
-                // Mettre à jour le tableau "content" de la scène spécifique
-                scene.content = [
-                    ...scene.content,
-                    newEntry,
-                ];
+          // Mettre à jour le tableau "content" de la scène spécifique
+          scene.content = [
+            ...scene.content,
+            newEntry,
+          ];
 
-                // Enregistrer les modifications dans Firestore
-                await db.collection('pieces').doc(playId).update({ scenes });
-            } else {
-                throw new Error('La scène spécifiée est introuvable.');
-            }
+          // Enregistrer les modifications dans Firestore
+          await db.collection('pieces').doc(playId).update({ scenes });
         } else {
-            throw new Error('La pièce demandée est introuvable.');
+          throw new Error('La scène spécifiée est introuvable.');
         }
+      } else {
+        throw new Error('La pièce demandée est introuvable.');
+      }
     } catch (error) {
-        setError(error);
+      setError(error);
     }
-};
-
-
-  
+  };
 
 
 
 
-  
+
+
+
+
 
   // Supprimer un document
   const deleteDocument = async (id) => {
